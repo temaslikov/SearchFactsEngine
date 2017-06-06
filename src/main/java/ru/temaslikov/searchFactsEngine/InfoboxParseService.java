@@ -6,6 +6,7 @@ import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
+import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.DirectoryStream;
@@ -24,6 +25,7 @@ import java.util.regex.Pattern;
 public class InfoboxParseService {
 
     private Map<Integer, String> titleMap;
+    private Map<Integer, Map<String, String>> infoboxMap;
 
     private String question, answer, firstWord, secondWord;
     private Integer trTag;
@@ -35,16 +37,17 @@ public class InfoboxParseService {
 
     InfoboxParseService () {
         titleMap = new HashMap<>();
+        infoboxMap = new HashMap<>();
 
         trPattern = Pattern.compile("^(\\s|\t)*<tr>(\\s|\t)*$");
         checkPattern = Pattern.compile("(<td|<th)");
         spacePattern = Pattern.compile("\\s+");
-        // todo: разделитель :
+
         String delimiter = "\\s+|:+|!+|\\?|—+|\"+|»+|«+|&lt;.*?&gt;|<.*?>";
         delimiter += "|\\)+|\\(+|\\{+|\\}+|\\+|/+|№+|“+|„+|\\[.*?]";
         delimiter += "|…+";
         delimiter += "| +";// не пробел
-        delimiter += "|&nbsp;?";
+        delimiter += "|&nbsp;?|&amp;?";
         delimiter += "|·+";
         delimiter += "<";
         delimiterPattern = Pattern.compile(delimiter);
@@ -71,15 +74,33 @@ public class InfoboxParseService {
 
     public void run() throws IOException {
 
-        // test
-        // todo: сделать выкачку из файла
-        int id = 38;
-        String infoHtml = getHtmlInfobox(id);
+        for (Integer id : titleMap.keySet()) {
+            System.out.println("parse id = " + id);
+            String infoHtml = getHtmlInfobox(id);
 
-        if (infoHtml != null) {
-            parseHtmlInfobox(infoHtml);
+            if (infoHtml != null) {
+                //infoboxMap.put(id, new HashMap<>());
+                parseHtmlInfobox(infoHtml, id);
+            }
+            System.out.println("--------------------------------");
+        }
+        writeInfobox();
+    }
+
+    private void writeInfobox() throws IOException {
+
+        FileWriter writer = new FileWriter(Constants.infoboxPath + "infoboxes.txt", true);
+
+        for (Map.Entry<Integer, Map<String, String>> entryKey : infoboxMap.entrySet()) {
+            for (Map.Entry<String, String> entryValue : entryKey.getValue().entrySet()) {
+                writer.write(titleMap.get(entryKey.getKey()) + ":" + entryValue.getKey() + ":"
+                + entryValue.getValue() + "\n");
+            }
         }
 
+        writer.close();
+        titleMap.clear();
+        infoboxMap.clear();
     }
 
     private String modify (String token, boolean isToLowerCase) {
@@ -90,19 +111,17 @@ public class InfoboxParseService {
         return token;
     }
 
-    public void parseHtmlInfobox (String infoHtml) {
+    public void parseHtmlInfobox (String infoHtml, Integer id) {
 
         trTag = 4;
         String[] linesHtml = infoHtml.split("\n");
 
         for (String lineHtml:linesHtml) {
-            parseLine(lineHtml);
-
-
+            parseLine(lineHtml, id);
         }
     }
 
-    private void parseLine(String lineHtml) {
+    private void parseLine(String lineHtml, Integer id) {
 
         Matcher trMatcher = trPattern.matcher(lineHtml);
         Matcher checkMatcher = checkPattern.matcher(lineHtml);
@@ -153,19 +172,24 @@ public class InfoboxParseService {
 
             System.out.println("firstWord = " + firstWord);
             System.out.println("secondWord = " + secondWord);
+            if (infoboxMap.get(id) == null)
+                infoboxMap.put(id, new HashMap<>());
+            else
+                infoboxMap.get(id).put(firstWord, secondWord);
+            // infoboxMap.put(id, infoboxMap.get(id).put(firstWord, secondWord));
         }
     }
 
     public String getHtmlInfobox (int id) throws IOException {
 
-        Connection.Response res = Jsoup.connect("http://ru.wikipedia.org/wiki?curid=" + id).execute();
+        Connection.Response res = Jsoup.connect("http://ru.wikipedia.org/wiki?curid=" + id).timeout(30*1000).execute();
         String html = res.body();
         Document doc2 = Jsoup.parseBodyFragment(html);
         Element body = doc2.body();
         Elements tables = body.getElementsByTag("table");
 
         for (Element table : tables) {
-            if (table.className().contains("infobox")==true) {
+            if (table.className().contains("infobox")) {
                 return table.outerHtml();
             }
         }

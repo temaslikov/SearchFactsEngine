@@ -18,10 +18,8 @@ public class Main {
     static void runInfoboxParseService() throws IOException {
 
         InfoboxParseService infoboxParseService = new InfoboxParseService();
-        //infoboxParseService.loadTitleMap(Resources.titlePath);
+        infoboxParseService.loadTitleMap(Constants.titlePath);
         infoboxParseService.run();
-
-
     }
 
 }
