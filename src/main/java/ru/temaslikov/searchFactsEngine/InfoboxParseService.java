@@ -1,0 +1,176 @@
+package ru.temaslikov.searchFactsEngine;
+
+import org.jsoup.Connection;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
+import org.jsoup.select.Elements;
+
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.DirectoryStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+/**
+ * Created by temaslikov on 04.06.17.
+ */
+
+public class InfoboxParseService {
+
+    private Map<Integer, String> titleMap;
+
+    private String question, answer, firstWord, secondWord;
+    private Integer trTag;
+
+    Pattern trPattern;
+    Pattern checkPattern;
+    Pattern spacePattern;
+    Pattern delimiterPattern;
+
+    InfoboxParseService () {
+        titleMap = new HashMap<>();
+
+        trPattern = Pattern.compile("^(\\s|\t)*<tr>(\\s|\t)*$");
+        checkPattern = Pattern.compile("(<td|<th)");
+        spacePattern = Pattern.compile("\\s+");
+        // todo: разделитель :
+        String delimiter = "\\s+|:+|!+|\\?|—+|\"+|»+|«+|&lt;.*?&gt;|<.*?>";
+        delimiter += "|\\)+|\\(+|\\{+|\\}+|\\+|/+|№+|“+|„+|\\[.*?]";
+        delimiter += "|…+";
+        delimiter += "| +";// не пробел
+        delimiter += "|&nbsp;?";
+        delimiter += "|·+";
+        delimiter += "<";
+        delimiterPattern = Pattern.compile(delimiter);
+    }
+
+    public void loadTitleMap(String path) {
+        try {
+            try (DirectoryStream<Path> stream = Files.newDirectoryStream(Paths.get(path))) {
+                for (Path entry: stream) {
+                    if (!entry.toFile().isDirectory()) {
+
+                        Files.lines(entry, StandardCharsets.UTF_8).forEach( (line) -> {
+                            String[] lines = line.split(" ", 2);
+                            titleMap.put(Integer.parseInt(lines[0]), lines[1]);
+                        });
+                    }
+                }
+                //System.out.println(allTokens);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void run() throws IOException {
+
+        // test
+        // todo: сделать выкачку из файла
+        int id = 38;
+        String infoHtml = getHtmlInfobox(id);
+
+        if (infoHtml != null) {
+            parseHtmlInfobox(infoHtml);
+        }
+
+    }
+
+    private String modify (String token, boolean isToLowerCase) {
+        token = token.trim().replace(" ,", ",");
+        token = spacePattern.matcher(token).replaceAll(" ");
+        if (isToLowerCase)
+            return token.toLowerCase();
+        return token;
+    }
+
+    public void parseHtmlInfobox (String infoHtml) {
+
+        trTag = 4;
+        String[] linesHtml = infoHtml.split("\n");
+
+        for (String lineHtml:linesHtml) {
+            parseLine(lineHtml);
+
+
+        }
+    }
+
+    private void parseLine(String lineHtml) {
+
+        Matcher trMatcher = trPattern.matcher(lineHtml);
+        Matcher checkMatcher = checkPattern.matcher(lineHtml);
+
+        if (trMatcher.matches()) {
+            trTag = 1;
+            firstWord = null;
+            secondWord = null;
+        }
+        else {
+            if (!checkMatcher.find()) {
+                if (trTag == 1 || trTag == 3)
+                    firstWord = null;
+                    secondWord = null;
+                    trTag = 4;
+                return;
+            }
+            else {
+                trTag++;
+                if (trTag == 2 || trTag == 3) {
+                    // parse
+                    String parseLine = delimiterPattern.matcher(lineHtml).replaceAll(" ");
+                    if (trTag == 2)
+                        firstWord = parseLine;
+                    else
+                        secondWord = parseLine;
+                }
+            }
+        }
+
+        if (firstWord != null && secondWord != null
+                && !spacePattern.matcher(firstWord).matches()
+                && !spacePattern.matcher(secondWord).matches()) {
+
+            firstWord = modify(firstWord, true);
+            secondWord = modify(secondWord, false);
+            // иногда парсер пишет два раза одно слово (из-за image или просто разметки)
+            String[] firstWords = firstWord.split(" ");
+            String[] secondWords = secondWord.split(" ");
+            if (firstWords.length == 2) {
+                if (firstWords[0].equals(firstWords[1]))
+                    firstWord = firstWords[0];
+            }
+            if (secondWords.length == 2) {
+                if (secondWords[0].equals(secondWords[1]))
+                    secondWord = secondWords[0];
+            }
+
+            System.out.println("firstWord = " + firstWord);
+            System.out.println("secondWord = " + secondWord);
+        }
+    }
+
+    public String getHtmlInfobox (int id) throws IOException {
+
+        Connection.Response res = Jsoup.connect("http://ru.wikipedia.org/wiki?curid=" + id).execute();
+        String html = res.body();
+        Document doc2 = Jsoup.parseBodyFragment(html);
+        Element body = doc2.body();
+        Elements tables = body.getElementsByTag("table");
+
+        for (Element table : tables) {
+            if (table.className().contains("infobox")==true) {
+                return table.outerHtml();
+            }
+        }
+
+        return null;
+    }
+
+}
