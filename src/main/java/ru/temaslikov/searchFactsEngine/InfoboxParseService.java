@@ -27,7 +27,7 @@ public class InfoboxParseService {
     private Map<Integer, String> titleMap;
     private Map<Integer, Map<String, String>> infoboxMap;
 
-    private String question, answer, firstWord, secondWord;
+    private String firstWord, secondWord;
     private Integer trTag;
 
     Pattern trPattern;
@@ -79,7 +79,6 @@ public class InfoboxParseService {
             String infoHtml = getHtmlInfobox(id);
 
             if (infoHtml != null) {
-                //infoboxMap.put(id, new HashMap<>());
                 parseHtmlInfobox(infoHtml, id);
             }
             System.out.println("--------------------------------");
@@ -89,11 +88,11 @@ public class InfoboxParseService {
 
     private void writeInfobox() throws IOException {
 
-        FileWriter writer = new FileWriter(Constants.infoboxPath + "infoboxes.txt", true);
+        FileWriter writer = new FileWriter(Constants.infoboxPath + "infoboxes.txt", false);
 
         for (Map.Entry<Integer, Map<String, String>> entryKey : infoboxMap.entrySet()) {
             for (Map.Entry<String, String> entryValue : entryKey.getValue().entrySet()) {
-                writer.write(titleMap.get(entryKey.getKey()) + ":" + entryValue.getKey() + ":"
+                writer.write(titleMap.get(entryKey.getKey()).toLowerCase() + ":" + entryValue.getKey() + ":"
                 + entryValue.getValue() + "\n");
             }
         }
@@ -111,7 +110,7 @@ public class InfoboxParseService {
         return token;
     }
 
-    public void parseHtmlInfobox (String infoHtml, Integer id) {
+    private void parseHtmlInfobox (String infoHtml, Integer id) {
 
         trTag = 4;
         String[] linesHtml = infoHtml.split("\n");
@@ -174,13 +173,12 @@ public class InfoboxParseService {
             System.out.println("secondWord = " + secondWord);
             if (infoboxMap.get(id) == null)
                 infoboxMap.put(id, new HashMap<>());
-            else
-                infoboxMap.get(id).put(firstWord, secondWord);
-            // infoboxMap.put(id, infoboxMap.get(id).put(firstWord, secondWord));
+
+            infoboxMap.get(id).put(firstWord, secondWord);
         }
     }
 
-    public String getHtmlInfobox (int id) throws IOException {
+    private String getHtmlInfobox (int id) throws IOException {
 
         Connection.Response res = Jsoup.connect("http://ru.wikipedia.org/wiki?curid=" + id)
                 .timeout(30*1000)

@@ -22,7 +22,6 @@ public class SearchFactsEngineController {
 
     private SearchFactsService searchFactsService;
     private long start, duration;
-    private Set<Integer> result;
 
     public SearchFactsEngineController() {
         start = currentTimeMillis();
@@ -40,8 +39,10 @@ public class SearchFactsEngineController {
     public ModelAndView start(@RequestParam(value="expression", required = false) String expression) {
         ModelAndView modelAndView = new ModelAndView();
         String answer = null;
+
         if (expression != null) {
-            answer = searchFactsService.searchFact(expression);
+            answer = searchFactsService.searchFact(searchFactsService.modify(expression));
+            System.out.println(searchFactsService.modify(expression));
         }
         modelAndView.addObject("expressionViewJSP", expression);
         modelAndView.addObject("answerViewJSP", answer);

@@ -20,7 +20,7 @@
 
 <form class="form-wrapper" method="get" action="/">
 
-    <input name="expression" type="text" id="search" placeholder="Please enter the query" required>
+    <input name="expression" type="text" id="search" placeholder="Please enter the query" required value="${expressionViewJSP}">
     <input type="submit" value="go" id="submit">
 </form>
 

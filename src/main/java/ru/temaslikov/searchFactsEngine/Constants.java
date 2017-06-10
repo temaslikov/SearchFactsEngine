@@ -6,7 +6,8 @@ package ru.temaslikov.searchFactsEngine;
  */
 public class Constants {
 
-    public static final String titlePath = "/home/temaslikov/IdeaProjects/SearchFactsEngine/resources/titles/";
-    public static final String infoboxPath = "/home/temaslikov/IdeaProjects/SearchFactsEngine/resources/infoboxes/";
+    private static final String data = "small_data";
+    public static final String titlePath = "/home/temaslikov/IdeaProjects/SearchFactsEngine/resources/" + data + "/titles/";
+    public static final String infoboxPath = "/home/temaslikov/IdeaProjects/SearchFactsEngine/resources/" + data + "/infoboxes/";
 
 }
