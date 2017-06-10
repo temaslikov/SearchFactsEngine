@@ -41,26 +41,11 @@ public class SearchFactsEngineController {
         ModelAndView modelAndView = new ModelAndView();
         String answer = null;
         if (expression != null) {
-            // todo: обработать и вывести результат в jsp
-            answer = "answer example";
+            answer = searchFactsService.searchFact(expression);
         }
         modelAndView.addObject("expressionViewJSP", expression);
         modelAndView.addObject("answerViewJSP", answer);
         modelAndView.setViewName("mainSearchFacts");
         return modelAndView;
     }
-
-    /*
-    @RequestMapping(value = "/search", method = RequestMethod.GET)
-    public ModelAndView search(@RequestParam(value="expression") String expression) {
-        ModelAndView modelAndView = new ModelAndView();
-        result = searchFactsService.findExpression(expression);
-
-        modelAndView.addObject("expressionViewJSP", expression);
-        modelAndView.addObject("titleMapViewJSP", searchService.getTitleMap());
-        modelAndView.addObject("resultViewJSP", searchService.findExpression(expression));
-        modelAndView.setViewName("mainSearch");
-        return modelAndView;
-    }
-    */
 }

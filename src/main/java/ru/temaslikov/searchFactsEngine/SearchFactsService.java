@@ -22,6 +22,12 @@ public class SearchFactsService {
 
     }
 
+    public String searchFact(String expression) {
+        String answer = null;
+        // todo: написать модуль
+        return answer;
+    }
+
     public void loadInfoboxMap(String path) {
         try {
             try (DirectoryStream<Path> stream = Files.newDirectoryStream(Paths.get(path))) {
