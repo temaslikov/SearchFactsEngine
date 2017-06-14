@@ -181,7 +181,7 @@ public class InfoboxParseService {
     private String getHtmlInfobox (int id) throws IOException {
 
         Connection.Response res = Jsoup.connect("http://ru.wikipedia.org/wiki?curid=" + id)
-                .timeout(30*1000)
+                .timeout(300*1000)
                 .ignoreHttpErrors(true)
                 .execute();
         String html = res.body();

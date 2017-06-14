@@ -5,11 +5,14 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.ModelAndView;
+import ru.stachek66.nlp.mystem.holding.Factory;
+import ru.stachek66.nlp.mystem.holding.MyStem;
+import ru.stachek66.nlp.mystem.holding.MyStemApplicationException;
 import ru.temaslikov.searchFactsEngine.Constants;
 import ru.temaslikov.searchFactsEngine.SearchFactsService;
+import scala.Option;
 
-import java.util.Set;
-import java.util.TreeSet;
+import java.io.File;
 
 import static java.lang.System.currentTimeMillis;
 
@@ -36,13 +39,14 @@ public class SearchFactsEngineController {
     }
 
     @RequestMapping(value = "/", method = RequestMethod.GET)
-    public ModelAndView start(@RequestParam(value="expression", required = false) String expression) {
+    public ModelAndView start(@RequestParam(value="expression", required = false) String expression) throws MyStemApplicationException {
         ModelAndView modelAndView = new ModelAndView();
         String answer = null;
 
         if (expression != null) {
-            answer = searchFactsService.searchFact(searchFactsService.modify(expression));
+
             System.out.println(searchFactsService.modify(expression));
+            answer = searchFactsService.searchFact(searchFactsService.modify(expression));
         }
         modelAndView.addObject("expressionViewJSP", expression);
         modelAndView.addObject("answerViewJSP", answer);

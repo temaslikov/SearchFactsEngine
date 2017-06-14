@@ -49,6 +49,10 @@ public class Main {
     }
 
     private static void runServer() throws Exception {
+
+        System.setProperty("org.eclipse.jetty.util.log.class", "org.eclipse.jetty.util.log.StdErrLog");
+        System.setProperty("org.eclipse.jetty.LEVEL", "OFF");
+
         Server server = new Server(8080);
 
         HandlerCollection handlers = new HandlerCollection();

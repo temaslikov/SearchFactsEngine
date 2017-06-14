@@ -1,7 +1,15 @@
 package ru.temaslikov.searchFactsEngine;
 
 import org.jetbrains.annotations.Nullable;
+import ru.stachek66.nlp.mystem.holding.Factory;
+import ru.stachek66.nlp.mystem.holding.MyStem;
+import ru.stachek66.nlp.mystem.holding.MyStemApplicationException;
+import ru.stachek66.nlp.mystem.holding.Request;
+import ru.stachek66.nlp.mystem.model.Info;
+import scala.Option;
+import scala.collection.JavaConversions;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.DirectoryStream;
@@ -22,6 +30,10 @@ public class SearchFactsService {
 
     private Pattern delimiterPattern;
 
+    private final static MyStem mystemAnalyzer =
+            new Factory("-igd --eng-gr --format json --weight")
+                    .newMyStem("3.0", Option.<File>empty()).get();
+
     public SearchFactsService () {
         infoboxMap = new HashMap<>();
 
@@ -36,6 +48,28 @@ public class SearchFactsService {
         delimiterPattern = Pattern.compile(delimiter);
     }
 
+    private String lex(String expression) throws MyStemApplicationException {
+
+        if (Constants.IS_LEX) {
+            final Iterable<Info> result =
+                    JavaConversions.asJavaIterable(
+                            mystemAnalyzer
+                                    .analyze(Request.apply(expression))
+                                    .info()
+                                    .toIterable());
+
+            StringBuilder modifyExpression = new StringBuilder();
+            for (final Info info : result)
+                modifyExpression.append(info.lex().get()).append(" ");
+
+            System.out.println("lex: " + modifyExpression.toString().trim());
+            return modifyExpression.toString().trim();
+        }
+
+        else
+            return expression;
+    }
+
     public String modify(String expression) {
         return delimiterPattern.matcher(expression)
                 .replaceAll(" ")
@@ -43,7 +77,7 @@ public class SearchFactsService {
                 .toLowerCase();
     }
 
-    public String searchFact(String expression) {
+    public String searchFact(String expression) throws MyStemApplicationException {
         String answer;
         String[] words = expression.split(" ");
         int wordsLength = words.length;
@@ -54,7 +88,13 @@ public class SearchFactsService {
             String expectedField = String.join(" ",
                     Arrays.copyOfRange(words, i, wordsLength));
 
-            answer = checkFact(expectedPage, expectedField);
+            answer = checkFact(lex(expectedPage), expectedField);
+            if (answer == null)
+                answer = checkFact(lex(expectedField), expectedPage);
+
+            // если страница сама по себе склоняема, например фильм "без защиты"
+            if (answer == null)
+                answer = checkFact(expectedPage, expectedField);
             if (answer == null)
                 answer = checkFact(expectedField, expectedPage);
 
